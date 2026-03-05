@@ -59,7 +59,7 @@ export function OGPreview({ config, scale = 0.5 }: OGPreviewProps) {
                 <img
                   src={config.logo}
                   alt="Logo"
-                  className="h-10 w-10 rounded-md object-contain"
+                  className="h-24 w-24 rounded-md object-contain"
                   crossOrigin="anonymous"
                 />
               </div>

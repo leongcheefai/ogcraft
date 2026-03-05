@@ -74,8 +74,8 @@ function buildSatoriElement(config: OGConfig) {
           type: "img",
           props: {
             src: config.logo,
-            width: 40,
-            height: 40,
+            width: 96,
+            height: 96,
             style: { borderRadius: 6, objectFit: "contain" as const },
           },
         },

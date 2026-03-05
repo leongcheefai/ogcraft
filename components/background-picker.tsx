@@ -1,13 +1,13 @@
 "use client"
 
-import type { BackgroundConfig, BackgroundMode, GradientDirection, GridOverlay } from "@/lib/og-types"
+import type { BackgroundConfig, BackgroundMode, GradientDirection, GridOverlay, GridOverlayConfig } from "@/lib/og-types"
 import { gradientPresets, solidPresets } from "@/lib/bg-presets"
 import { cn } from "@/lib/utils"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
-import { ArrowUp, ArrowUpRight, ArrowRight, ArrowDownRight, ArrowDown, ArrowDownLeft, ArrowLeft, ArrowUpLeft } from "lucide-react"
+import { ArrowUp, ArrowUpRight, ArrowRight, ArrowDownRight, ArrowDown, ArrowDownLeft, ArrowLeft, ArrowUpLeft, Grid3X3, CircleDot, Ban, MoreHorizontal, LayoutGrid } from "lucide-react"
 
 interface BackgroundPickerProps {
   background: BackgroundConfig
@@ -126,23 +126,162 @@ export function BackgroundPicker({ background, onChange }: BackgroundPickerProps
       )}
 
       {/* Grid Overlay */}
-      <div className="flex flex-col gap-2">
-        <Label className="text-xs text-muted-foreground">Grid Overlay</Label>
-        <Select
-          value={background.gridOverlay}
-          onValueChange={(v) => update({ gridOverlay: v as GridOverlay })}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">None</SelectItem>
-            <SelectItem value="grid">Grid</SelectItem>
-            <SelectItem value="dots">Dots</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      <GridOverlayPicker
+        config={background.gridOverlay}
+        onChange={(gridOverlay) => update({ gridOverlay })}
+      />
 
+    </div>
+  )
+}
+
+const GRID_PATTERNS: { value: GridOverlay; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: "none", label: "None", icon: Ban },
+  { value: "grid", label: "Grid", icon: Grid3X3 },
+  { value: "graph", label: "Graph", icon: LayoutGrid },
+  { value: "dots", label: "Dots", icon: CircleDot },
+]
+
+const GRID_COLORS = [
+  { color: "#000000", label: "Black" },
+  { color: "#6b7280", label: "Gray" },
+  { color: "#ffffff", label: "White" },
+]
+
+function GridOverlayPicker({
+  config,
+  onChange,
+}: {
+  config: GridOverlayConfig
+  onChange: (config: GridOverlayConfig) => void
+}) {
+  function updateGrid(partial: Partial<GridOverlayConfig>) {
+    onChange({ ...config, ...partial })
+  }
+
+  const activePattern = GRID_PATTERNS.find((p) => p.value === config.pattern)
+  const ActiveIcon = activePattern?.icon ?? Ban
+
+  return (
+    <div className="flex flex-col gap-2">
+      <Label className="text-xs text-muted-foreground">Grid Overlay</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "flex w-full items-center gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors",
+              "hover:bg-accent hover:text-accent-foreground",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            )}
+          >
+            <ActiveIcon className="size-4 text-muted-foreground" />
+            <span>{activePattern?.label ?? "None"}</span>
+            {config.pattern !== "none" && (
+              <span className="ml-auto text-xs text-muted-foreground">
+                {Math.round(config.opacity * 100)}%
+              </span>
+            )}
+            <MoreHorizontal className="ml-auto size-4 text-muted-foreground" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium">Grid Overlay</p>
+              <p className="text-xs text-muted-foreground">
+                Apply a grid overlay to the background.
+              </p>
+            </div>
+
+            {/* Pattern */}
+            <div className="flex flex-col gap-2">
+              <Label className="text-xs font-medium">Pattern</Label>
+              <div className="flex gap-1.5">
+                {GRID_PATTERNS.map(({ value, label, icon: Icon }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => updateGrid({ pattern: value })}
+                    className={cn(
+                      "flex flex-1 flex-col items-center gap-1 rounded-md border px-2 py-2 text-xs transition-colors",
+                      "hover:bg-accent hover:text-accent-foreground",
+                      config.pattern === value
+                        ? "border-foreground bg-accent text-accent-foreground"
+                        : "border-border text-muted-foreground"
+                    )}
+                  >
+                    <Icon className="size-5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Color */}
+            {config.pattern !== "none" && (
+              <>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-xs font-medium">Color</Label>
+                  <div className="flex gap-2">
+                    {GRID_COLORS.map(({ color, label }) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => updateGrid({ color })}
+                        className={cn(
+                          "size-8 rounded-md border transition-all",
+                          "hover:scale-110",
+                          config.color === color
+                            ? "ring-2 ring-foreground ring-offset-2 ring-offset-background"
+                            : "border-border",
+                          color === "#ffffff" && "border-border"
+                        )}
+                        style={{ backgroundColor: color }}
+                        aria-label={label}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Opacity */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Opacity</Label>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {config.opacity.toFixed(2)}
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[config.opacity * 100]}
+                    onValueChange={([v]) => updateGrid({ opacity: v / 100 })}
+                  />
+                </div>
+
+                {/* Blur Radius */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-medium">Blur Radius</Label>
+                    <span className="font-mono text-xs text-muted-foreground">
+                      {config.blur}%
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[config.blur]}
+                    onValueChange={([v]) => updateGrid({ blur: v })}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }

@@ -8,7 +8,14 @@ export type GradientDirection =
   | "to bottom left"
   | "to left"
   | "to top left"
-export type GridOverlay = "none" | "grid" | "dots"
+export type GridOverlay = "none" | "grid" | "graph" | "dots"
+
+export interface GridOverlayConfig {
+  pattern: GridOverlay
+  color: string
+  opacity: number // 0..1
+  blur: number // 0..100 percentage
+}
 
 export interface BackgroundConfig {
   mode: BackgroundMode
@@ -16,7 +23,7 @@ export interface BackgroundConfig {
   gradientFrom: string
   gradientTo: string
   gradientDirection: GradientDirection
-  gridOverlay: GridOverlay
+  gridOverlay: GridOverlayConfig
 }
 
 export interface OGConfig {

@@ -1,8 +1,9 @@
 import satori from "satori"
 import { initWasm, Resvg } from "@resvg/resvg-wasm"
 import type { OGConfig } from "./og-types"
+import type { GridOverlayConfig } from "./og-types"
 import { bgConfigToCss } from "./bg-presets"
-import { shouldUseDarkText } from "./color-utils"
+import { shouldUseDarkText, hexToRgb } from "./color-utils"
 
 const fontCache: Map<string, ArrayBuffer> = new Map()
 let wasmInitialized = false
@@ -46,17 +47,16 @@ async function ensureWasm(): Promise<void> {
 }
 
 function buildGridOverlayChildren(
-  overlay: string,
-  darkText: boolean
+  gridConfig: GridOverlayConfig
 ): React.ReactNode[] {
-  if (overlay === "none") return []
+  if (gridConfig.pattern === "none") return []
 
-  const color = darkText ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"
+  const { r, g, b } = hexToRgb(gridConfig.color)
+  const rgba = `rgba(${r},${g},${b},${gridConfig.opacity})`
 
-  if (overlay === "grid") {
+  function makeLines(spacing: number): React.ReactNode[] {
     const children: React.ReactNode[] = []
-    // Vertical lines
-    for (let x = 40; x < 1200; x += 40) {
+    for (let x = spacing; x < 1200; x += spacing) {
       children.push({
         type: "div",
         props: {
@@ -67,13 +67,12 @@ function buildGridOverlayChildren(
             top: 0,
             width: 1,
             height: 630,
-            backgroundColor: color,
+            backgroundColor: rgba,
           },
         },
       })
     }
-    // Horizontal lines
-    for (let y = 40; y < 630; y += 40) {
+    for (let y = spacing; y < 630; y += spacing) {
       children.push({
         type: "div",
         props: {
@@ -84,7 +83,7 @@ function buildGridOverlayChildren(
             top: y,
             width: 1200,
             height: 1,
-            backgroundColor: color,
+            backgroundColor: rgba,
           },
         },
       })
@@ -92,8 +91,10 @@ function buildGridOverlayChildren(
     return children
   }
 
-  if (overlay === "dots") {
-    const dotColor = darkText ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"
+  if (gridConfig.pattern === "grid") return makeLines(40)
+  if (gridConfig.pattern === "graph") return makeLines(20)
+
+  if (gridConfig.pattern === "dots") {
     const children: React.ReactNode[] = []
     for (let x = 12; x < 1200; x += 24) {
       for (let y = 12; y < 630; y += 24) {
@@ -108,11 +109,10 @@ function buildGridOverlayChildren(
               width: 3,
               height: 3,
               borderRadius: "50%",
-              backgroundColor: dotColor,
+              backgroundColor: rgba,
             },
           },
-        },
-        )
+        })
       }
     }
     return children
@@ -198,7 +198,7 @@ function buildSatoriElement(config: OGConfig) {
   const wrapperChildren: React.ReactNode[] = []
 
   // Grid overlay children
-  const overlayChildren = buildGridOverlayChildren(bg.gridOverlay, darkText)
+  const overlayChildren = buildGridOverlayChildren(bg.gridOverlay)
   if (overlayChildren.length > 0) {
     wrapperChildren.push({
       type: "div",

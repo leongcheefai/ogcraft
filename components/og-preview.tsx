@@ -9,14 +9,22 @@ interface OGPreviewProps {
   scale?: number
 }
 
-function getGridOverlayCss(overlay: string, darkText: boolean): string | undefined {
-  const color = darkText ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"
-  if (overlay === "grid") {
-    return `repeating-linear-gradient(0deg, ${color} 0px, ${color} 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, ${color} 0px, ${color} 1px, transparent 1px, transparent 40px)`
+import type { GridOverlayConfig } from "@/lib/og-types"
+import { hexToRgb } from "@/lib/color-utils"
+
+function getGridOverlayCss(config: GridOverlayConfig): string | undefined {
+  if (config.pattern === "none") return undefined
+  const { r, g, b } = hexToRgb(config.color)
+  const rgba = `rgba(${r},${g},${b},${config.opacity})`
+
+  if (config.pattern === "grid") {
+    return `repeating-linear-gradient(0deg, ${rgba} 0px, ${rgba} 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, ${rgba} 0px, ${rgba} 1px, transparent 1px, transparent 40px)`
   }
-  if (overlay === "dots") {
-    const dotColor = darkText ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"
-    return `radial-gradient(circle at center, ${dotColor} 1px, transparent 1px)`
+  if (config.pattern === "graph") {
+    return `repeating-linear-gradient(0deg, ${rgba} 0px, ${rgba} 1px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, ${rgba} 0px, ${rgba} 1px, transparent 1px, transparent 20px)`
+  }
+  if (config.pattern === "dots") {
+    return `radial-gradient(circle at center, ${rgba} 1px, transparent 1px)`
   }
   return undefined
 }
@@ -31,7 +39,8 @@ export function OGPreview({ config, scale = 0.5 }: OGPreviewProps) {
     ? "rgba(24, 24, 27, 0.5)"
     : "rgba(255, 255, 255, 0.5)"
 
-  const gridBg = getGridOverlayCss(config.background.gridOverlay, darkText)
+  const gridBg = getGridOverlayCss(config.background.gridOverlay)
+  const gridBlurPx = (config.background.gridOverlay.blur / 100) * 4 // max 4px blur
 
   return (
     <div className="flex flex-col items-center gap-3">
@@ -60,9 +69,10 @@ export function OGPreview({ config, scale = 0.5 }: OGPreviewProps) {
               className="absolute inset-0"
               style={{
                 backgroundImage: gridBg,
-                ...(config.background.gridOverlay === "dots"
+                ...(config.background.gridOverlay.pattern === "dots"
                   ? { backgroundSize: "24px 24px" }
                   : {}),
+                ...(gridBlurPx > 0 ? { filter: `blur(${gridBlurPx}px)` } : {}),
               }}
             />
           )}

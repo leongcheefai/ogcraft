@@ -17,7 +17,7 @@ const DEFAULT_CONFIG: OGConfig = {
     gradientFrom: "#18181b",
     gradientTo: "#09090b",
     gradientDirection: "to bottom",
-    gridOverlay: "none",
+    gridOverlay: { pattern: "none", color: "#000000", opacity: 0.15, blur: 0 },
   },
   logo: null,
 }

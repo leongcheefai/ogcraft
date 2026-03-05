@@ -1,15 +1,12 @@
 import satori from "satori"
 import { initWasm, Resvg } from "@resvg/resvg-wasm"
 import type { OGConfig } from "./og-types"
-import { getTheme } from "./og-themes"
+import { bgConfigToCss } from "./bg-presets"
+import { shouldUseDarkText } from "./color-utils"
 
 const fontCache: Map<string, ArrayBuffer> = new Map()
 let wasmInitialized = false
 
-/**
- * Loads a font via our server-side API route which proxies Google Fonts
- * and ensures we get a TTF binary (not WOFF2 which Satori can't read).
- */
 async function loadFont(weight: number): Promise<ArrayBuffer> {
   const cacheKey = `inter-${weight}`
   if (fontCache.has(cacheKey)) return fontCache.get(cacheKey)!
@@ -37,7 +34,6 @@ async function ensureWasm(): Promise<void> {
     await initWasm(wasmResponse)
     wasmInitialized = true
   } catch (e) {
-    // If already initialized, that's ok
     if (
       e instanceof Error &&
       e.message.includes("Already initialized")
@@ -49,18 +45,99 @@ async function ensureWasm(): Promise<void> {
   }
 }
 
+function buildGridOverlayChildren(
+  overlay: string,
+  darkText: boolean
+): React.ReactNode[] {
+  if (overlay === "none") return []
+
+  const color = darkText ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"
+
+  if (overlay === "grid") {
+    const children: React.ReactNode[] = []
+    // Vertical lines
+    for (let x = 40; x < 1200; x += 40) {
+      children.push({
+        type: "div",
+        props: {
+          key: `v${x}`,
+          style: {
+            position: "absolute" as const,
+            left: x,
+            top: 0,
+            width: 1,
+            height: 630,
+            backgroundColor: color,
+          },
+        },
+      })
+    }
+    // Horizontal lines
+    for (let y = 40; y < 630; y += 40) {
+      children.push({
+        type: "div",
+        props: {
+          key: `h${y}`,
+          style: {
+            position: "absolute" as const,
+            left: 0,
+            top: y,
+            width: 1200,
+            height: 1,
+            backgroundColor: color,
+          },
+        },
+      })
+    }
+    return children
+  }
+
+  if (overlay === "dots") {
+    const dotColor = darkText ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"
+    const children: React.ReactNode[] = []
+    for (let x = 12; x < 1200; x += 24) {
+      for (let y = 12; y < 630; y += 24) {
+        children.push({
+          type: "div",
+          props: {
+            key: `d${x}-${y}`,
+            style: {
+              position: "absolute" as const,
+              left: x,
+              top: y,
+              width: 3,
+              height: 3,
+              borderRadius: "50%",
+              backgroundColor: dotColor,
+            },
+          },
+        },
+        )
+      }
+    }
+    return children
+  }
+
+  return []
+}
+
 function buildSatoriElement(config: OGConfig) {
-  const theme = getTheme(config.theme)
-  const textColor = theme.darkText ? "#18181b" : "#ffffff"
-  const subtextColor = theme.darkText
+  const bg = config.background
+  const darkText = shouldUseDarkText(bg)
+  const textColor = darkText ? "#18181b" : "#ffffff"
+  const subtextColor = darkText
     ? "rgba(24, 24, 27, 0.7)"
     : "rgba(255, 255, 255, 0.8)"
-  const slugColor = theme.darkText
+  const slugColor = darkText
     ? "rgba(24, 24, 27, 0.5)"
     : "rgba(255, 255, 255, 0.5)"
 
-  // Parse gradient for satori (it needs separate background props)
-  const isGradient = theme.cssBackground.includes("gradient")
+  const cssBackground = bgConfigToCss(bg)
+  const isGradient = bg.mode === "gradient"
+
+  const bgStyle: Record<string, string> = isGradient
+    ? { backgroundImage: cssBackground }
+    : { backgroundColor: cssBackground }
 
   const children: React.ReactNode[] = []
 
@@ -118,23 +195,41 @@ function buildSatoriElement(config: OGConfig) {
     })
   }
 
-  // Build the main wrapper children array
-  const wrapperChildren: React.ReactNode[] = [
-    // Content area
-    {
+  const wrapperChildren: React.ReactNode[] = []
+
+  // Grid overlay children
+  const overlayChildren = buildGridOverlayChildren(bg.gridOverlay, darkText)
+  if (overlayChildren.length > 0) {
+    wrapperChildren.push({
       type: "div",
       props: {
         style: {
           display: "flex",
-          flexDirection: "column" as const,
-          justifyContent: "center" as const,
-          flex: 1,
-          padding: 64,
+          position: "absolute" as const,
+          top: 0,
+          left: 0,
+          width: 1200,
+          height: 630,
         },
-        children,
+        children: overlayChildren,
       },
+    })
+  }
+
+  // Content area
+  wrapperChildren.push({
+    type: "div",
+    props: {
+      style: {
+        display: "flex",
+        flexDirection: "column" as const,
+        justifyContent: "center" as const,
+        flex: 1,
+        padding: 64,
+      },
+      children,
     },
-  ]
+  })
 
   // Slug at bottom right
   if (config.slug) {
@@ -153,25 +248,6 @@ function buildSatoriElement(config: OGConfig) {
       },
     })
   }
-
-  // Volt accent line
-  if (theme.accentColor) {
-    wrapperChildren.push({
-      type: "div",
-      props: {
-        style: {
-          display: "flex",
-          width: "100%",
-          height: 4,
-          backgroundColor: theme.accentColor,
-        },
-      },
-    })
-  }
-
-  const bgStyle: Record<string, string> = isGradient
-    ? { backgroundImage: theme.cssBackground }
-    : { backgroundColor: theme.cssBackground }
 
   return {
     type: "div",

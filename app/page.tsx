@@ -11,7 +11,14 @@ const DEFAULT_CONFIG: OGConfig = {
   description:
     "Generate professional Open Graph images in seconds. No design skills needed.",
   slug: "ogcraft.vercel.app",
-  theme: "volt",
+  background: {
+    mode: "gradient",
+    solidColor: "#18181b",
+    gradientFrom: "#18181b",
+    gradientTo: "#09090b",
+    gradientDirection: "to bottom",
+    gridOverlay: "none",
+  },
   logo: null,
 }
 
@@ -23,7 +30,7 @@ export default function Home() {
   const calculateScale = useCallback(() => {
     const container = previewContainerRef.current
     if (!container) return
-    const containerWidth = container.clientWidth - 48 // account for padding
+    const containerWidth = container.clientWidth - 48
     const newScale = Math.min(containerWidth / 1200, 0.6)
     setScale(newScale)
   }, [])
@@ -48,7 +55,6 @@ export default function Home() {
       {/* Right Panel - Preview */}
       <section className="flex flex-1 flex-col" ref={previewContainerRef}>
         <div className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
-          {/* Preview area */}
           <div
             className="w-full"
             style={{ maxWidth: 1200 * scale + 4 }}
@@ -56,18 +62,15 @@ export default function Home() {
             <OGPreview config={config} scale={scale} />
           </div>
 
-          {/* Export controls */}
           <div className="w-full" style={{ maxWidth: 1200 * scale + 4 }}>
             <ExportButton config={config} />
           </div>
         </div>
 
-        {/* Footer */}
         <footer className="flex items-center justify-center border-t border-border px-6 py-3">
           <span className="font-mono text-xs text-muted-foreground">
             {"Built with OGCraft"}
           </span>
-
         </footer>
       </section>
     </main>

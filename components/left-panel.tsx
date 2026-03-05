@@ -1,7 +1,7 @@
 "use client"
 
-import type { OGConfig, ThemeName } from "@/lib/og-types"
-import { ThemePicker } from "./theme-picker"
+import type { OGConfig, BackgroundConfig } from "@/lib/og-types"
+import { BackgroundPicker } from "./background-picker"
 import { LogoUpload } from "./logo-upload"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -95,10 +95,10 @@ export function LeftPanel({ config, onConfigChange }: LeftPanelProps) {
         />
       </div>
 
-      {/* Theme Picker */}
-      <ThemePicker
-        selected={config.theme}
-        onSelect={(theme: ThemeName) => update({ theme })}
+      {/* Background Picker */}
+      <BackgroundPicker
+        background={config.background}
+        onChange={(background: BackgroundConfig) => update({ background })}
       />
 
       {/* Logo Upload */}

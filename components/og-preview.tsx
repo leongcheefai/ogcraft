@@ -1,31 +1,43 @@
 "use client"
 
 import type { OGConfig } from "@/lib/og-types"
-import { getTheme } from "@/lib/og-themes"
+import { bgConfigToCss } from "@/lib/bg-presets"
+import { shouldUseDarkText } from "@/lib/color-utils"
 
 interface OGPreviewProps {
   config: OGConfig
   scale?: number
 }
 
+function getGridOverlayCss(overlay: string, darkText: boolean): string | undefined {
+  const color = darkText ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"
+  if (overlay === "grid") {
+    return `repeating-linear-gradient(0deg, ${color} 0px, ${color} 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, ${color} 0px, ${color} 1px, transparent 1px, transparent 40px)`
+  }
+  if (overlay === "dots") {
+    const dotColor = darkText ? "rgba(0,0,0,0.2)" : "rgba(255,255,255,0.2)"
+    return `radial-gradient(circle at center, ${dotColor} 1px, transparent 1px)`
+  }
+  return undefined
+}
+
 export function OGPreview({ config, scale = 0.5 }: OGPreviewProps) {
-  const theme = getTheme(config.theme)
-  const textColor = theme.darkText ? "#18181b" : "#ffffff"
-  const subtextColor = theme.darkText
+  const darkText = shouldUseDarkText(config.background)
+  const textColor = darkText ? "#18181b" : "#ffffff"
+  const subtextColor = darkText
     ? "rgba(24, 24, 27, 0.7)"
     : "rgba(255, 255, 255, 0.8)"
-  const slugColor = theme.darkText
+  const slugColor = darkText
     ? "rgba(24, 24, 27, 0.5)"
     : "rgba(255, 255, 255, 0.5)"
 
+  const gridBg = getGridOverlayCss(config.background.gridOverlay, darkText)
+
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* Scaled container - the inner div is 1200x630 but CSS-scaled down */}
       <div
         className="w-full overflow-hidden rounded-lg border border-border shadow-2xl"
-        style={{
-          height: 630 * scale,
-        }}
+        style={{ height: 630 * scale }}
       >
         <div
           className="relative"
@@ -39,14 +51,19 @@ export function OGPreview({ config, scale = 0.5 }: OGPreviewProps) {
           {/* Background */}
           <div
             className="absolute inset-0 transition-all duration-500 ease-out"
-            style={{ background: theme.cssBackground }}
+            style={{ background: bgConfigToCss(config.background) }}
           />
 
-          {/* Volt accent line */}
-          {theme.accentColor && (
+          {/* Grid overlay */}
+          {gridBg && (
             <div
-              className="absolute bottom-0 left-0 right-0 h-1"
-              style={{ backgroundColor: theme.accentColor }}
+              className="absolute inset-0"
+              style={{
+                backgroundImage: gridBg,
+                ...(config.background.gridOverlay === "dots"
+                  ? { backgroundSize: "24px 24px" }
+                  : {}),
+              }}
             />
           )}
 
@@ -97,10 +114,7 @@ export function OGPreview({ config, scale = 0.5 }: OGPreviewProps) {
               <div className="flex justify-end">
                 <span
                   className="font-mono"
-                  style={{
-                    color: slugColor,
-                    fontSize: 20,
-                  }}
+                  style={{ color: slugColor, fontSize: 20 }}
                 >
                   {config.slug}
                 </span>
@@ -110,7 +124,6 @@ export function OGPreview({ config, scale = 0.5 }: OGPreviewProps) {
         </div>
       </div>
 
-      {/* Size indicator */}
       <span className="font-mono text-xs text-muted-foreground">
         {"1200 x 630"}
       </span>

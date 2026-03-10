@@ -68,9 +68,9 @@ export default function Home() {
         </div>
 
         <footer className="flex items-center justify-center border-t border-border px-6 py-3">
-          <span className="font-mono text-xs text-muted-foreground">
-            {"Built with OGCraft"}
-          </span>
+          <a href="https://www.praxor.dev/" target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Built by Praxor
+          </a>
         </footer>
       </section>
     </main>
